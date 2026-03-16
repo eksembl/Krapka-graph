@@ -2,6 +2,10 @@
   "name": "krapka-graph",
   "version": "1.2.0",
   "description": "Graph visualization tool for OSINT investigations",
+  "author": {
+    "name": "eksembl",
+    "email": "ejjeejj232@gmail.com"
+  },
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
