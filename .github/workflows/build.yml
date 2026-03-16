@@ -1,0 +1,40 @@
+name: Build Linux
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Linux
+        run: npm run build:linux
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-AppImage
+          path: dist/*.AppImage
+
+      - name: Upload deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: dist/*.deb
+
+      - name: Upload rpm
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: dist/*.rpm
