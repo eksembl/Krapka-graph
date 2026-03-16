@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https:">
+<meta charset="UTF-8">
+<title>Krapka Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="titlebar">
+  <div class="tb-drag">
+    <div class="tb-logo">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="3" fill="#BEFF00"/>
+        <circle cx="3" cy="4" r="1.5" fill="#BEFF00" opacity=".55"/>
+        <circle cx="13" cy="4" r="1.5" fill="#BEFF00" opacity=".55"/>
+        <circle cx="3" cy="12" r="1.5" fill="#BEFF00" opacity=".55"/>
+        <circle cx="13" cy="12" r="1.5" fill="#BEFF00" opacity=".55"/>
+        <line x1="5" y1="8" x2="3" y2="4"   stroke="#BEFF00" stroke-width="1" opacity=".35"/>
+        <line x1="11" y1="8" x2="13" y2="4"  stroke="#BEFF00" stroke-width="1" opacity=".35"/>
+        <line x1="5" y1="8" x2="3" y2="12"   stroke="#BEFF00" stroke-width="1" opacity=".35"/>
+        <line x1="11" y1="8" x2="13" y2="12" stroke="#BEFF00" stroke-width="1" opacity=".35"/>
+      </svg>
+      <span class="tb-name">Krapka <span class="tb-lime">Graph</span></span>
+    </div>
+    <span class="tb-file" id="tbFilename">Untitled.kg</span>
+    <span class="tb-unsaved" id="tbUnsaved" style="display:none">●</span>
+    <button class="tb-rename-btn" onclick="renameProject()" data-i18n-title="ren_proj">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M6.5 1.5l2.5 2.5-5 5H1.5V6.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="tb-wins">
+    <button class="wbtn wbtn-min" onclick="window.krapka.minimize()"><svg width="10" height="2" viewBox="0 0 10 2"><rect width="10" height="1.5" rx=".75" fill="currentColor"/></svg></button>
+    <button class="wbtn wbtn-max" onclick="window.krapka.maximize()"><svg width="10" height="10" viewBox="0 0 10 10"><rect x=".75" y=".75" width="8.5" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <button class="wbtn wbtn-close" onclick="window.krapka.close()"><svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  </div>
+</div>
+
+<div class="workspace">
+  <aside class="sidebar">
+    <div class="sb-search-wrap">
+      <svg class="sb-search-ico" width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/><line x1="8.5" y1="8.5" x2="12" y2="12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <input id="searchInput" class="sb-search" data-i18n-placeholder="search" placeholder="Поиск узлов…" oninput="onSearch(this.value)">
+      <button class="sb-search-clear" id="searchClear" onclick="clearSearch()" style="display:none"><svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label" data-i18n="types">Типы узлов</div>
+      <div class="node-palette" id="nodePalette"></div>
+    </div>
+    <div class="sb-section sb-section-grow">
+      <div class="sb-label" data-i18n="projects">Проекты</div>
+      <div class="graph-list" id="graphList"></div>
+      <button class="btn-new-graph" onclick="newGraph()">
+        <svg width="11" height="11" viewBox="0 0 11 11"><line x1="5.5" y1="1" x2="5.5" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span data-i18n="new_graph">Новый граф</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="center">
+    <div class="toolbar">
+      <div class="tg">
+        <button class="tbtn active" id="tbSelect" onclick="setTool('select')" data-i18n-title="t_sel"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 1.5l8.5 5-4 1.1L5.5 12z" fill="currentColor"/></svg><span data-i18n="l_sel">Выбор</span></button>
+        <button class="tbtn" id="tbEdge" onclick="setTool('edge')" data-i18n-title="t_edge"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="2.5" cy="6.5" r="1.8" stroke="currentColor" stroke-width="1.3"/><circle cx="10.5" cy="6.5" r="1.8" stroke="currentColor" stroke-width="1.3"/><line x1="4.3" y1="6.5" x2="8.7" y2="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.2 5.2l2 1.3-2 1.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span data-i18n="l_edge">Связь</span></button>
+        <button class="tbtn" id="tbPan" onclick="setTool('pan')" data-i18n-title="t_pan"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5v5M4.5 3v3.5M2.5 4.5v3M8.5 3v3.5M10.5 4.5v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M2.5 7.5c0 2.5 1.5 4 4 4s4-1.5 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg><span data-i18n="l_pan">Рука</span></button>
+      </div>
+      <div class="tb-sep"></div>
+      <button class="tbtn" onclick="showAddModal()" data-i18n-title="t_add"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.3"/><line x1="6.5" y1="4" x2="6.5" y2="9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="6.5" x2="9" y2="6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span data-i18n="l_node">Узел</span></button>
+      <button class="tbtn tbtn-danger" id="tbDelete" onclick="deleteSelected()" style="display:none" data-i18n-title="t_del"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M4.5 3.5V2.2h4v1.3M4 3.5l.5 7.5h4l.5-7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="l_del">Удалить</span></button>
+      <div class="tb-sep"></div>
+      <button class="tbtn" onclick="autoLayout()" data-i18n-title="t_auto"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="1" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="4.5" y="8" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="5" x2="6.5" y2="8" stroke="currentColor" stroke-width="1.1"/><line x1="10" y1="5" x2="6.5" y2="8" stroke="currentColor" stroke-width="1.1"/></svg><span data-i18n="l_auto">Авто</span></button>
+      <button class="tbtn" id="tbEdgeStyle" onclick="toggleEdgeStyle()" data-i18n-title="t_style_c"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 11C3 8 5 5 6.5 6.5S9 5.5 11.5 2" fill="none"/></svg><span> Кривые</span></button>
+      <button class="tbtn" id="tbForce" onclick="forceLayout()" data-i18n-title="t_force"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.2"/><line x1="6.5" y1="1" x2="6.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="6.5" y1="8.5" x2="6.5" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="4.5" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8.5" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Force</button>
+      <div class="tb-sep"></div>
+      <button class="tbtn" id="tbUndo" onclick="undo()" data-i18n-title="t_undo" disabled><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5A4 4 0 1 0 4 4H2" fill="none"/><polyline points="2 2 2 5 5 5" fill="none"/></svg></button>
+      <button class="tbtn" id="tbRedo" onclick="redo()" data-i18n-title="t_redo" disabled><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 7.5A4 4 0 1 1 9 4H11" fill="none"/><polyline points="11 2 11 5 8 5" fill="none"/></svg></button>
+      <div class="tb-sep"></div>
+      <button class="tbtn" id="tbSnap" onclick="toggleSnap()" data-i18n-title="t_snap"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="6.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="10.5" r="1" fill="currentColor" stroke="none"/></svg><span data-i18n="l_snap">Сетка</span></button>
+      <div class="tb-sep"></div>
+      <button class="tbtn" onclick="saveGraph()" data-i18n-title="t_save"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2h7L11.5 4.5V11H2V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><rect x="4" y="7" width="5" height="4" rx=".5" stroke="currentColor" stroke-width="1.1"/><rect x="4" y="2" width="3.5" height="2.5" rx=".5" stroke="currentColor" stroke-width="1.1"/></svg><span data-i18n="l_save">Сохранить</span></button>
+      <button class="tbtn" onclick="openGraph()" data-i18n-title="t_open"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 4h3l1.5-1.5H11V11H2V4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg><span data-i18n="l_open">Открыть</span></button>
+      
+      <div class="tb-dropdown" id="exportDropdown">
+        <button class="tbtn" onclick="toggleExportMenu()" data-i18n-title="t_exp"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v7M4 5.5l2.5 2.5L9 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9v2h9V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="l_exp">Экспорт</span> <svg width="8" height="5" viewBox="0 0 8 5"><path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
+        <div class="tb-dropdown-menu" id="exportMenu">
+          <div class="dd-item" onclick="exportPng()"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="4.5" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.1"/><path d="M1 9l3-3 2.5 2.5L9 6l3 4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span data-i18n="exp_png">Экспорт PNG</span></div>
+          <div class="dd-item" onclick="exportSvg()"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2h6.5L11 4.5V11H2V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><text x="3.5" y="9.5" font-size="4.5" fill="currentColor" font-family="monospace">SVG</text></svg><span data-i18n="exp_svg">Экспорт SVG</span></div>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="tbtn" onclick="fitView()" data-i18n-title="t_fit"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 4V1.5h2.5M9 1.5H11.5V4M11.5 9v2.5H9M3.5 11.5H1V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="zoom-ctl">
+        <button class="zbtn" onclick="changeZoom(-0.15)"><svg width="9" height="9" viewBox="0 0 9 9"><line x1="1.5" y1="4.5" x2="7.5" y2="4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <span class="zlabel" id="zoomLabel">100%</span>
+        <button class="zbtn" onclick="changeZoom(0.15)"><svg width="9" height="9" viewBox="0 0 9 9"><line x1="4.5" y1="1.5" x2="4.5" y2="7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1.5" y1="4.5" x2="7.5" y2="4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+    <div class="tag-bar" id="tagBar" style="display:none"></div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="minimap" id="minimap"><canvas id="minimapCanvas" width="180" height="120"></canvas><div class="minimap-viewport" id="minimapViewport"></div></div>
+      <div class="sel-rect" id="selRect"></div>
+      <div class="edge-hint" id="edgeHint"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="2" cy="6" r="1.8" stroke="currentColor" stroke-width="1.2"/><circle cx="10" cy="6" r="1.8" stroke="currentColor" stroke-width="1.2"/><line x1="3.8" y1="6" x2="8.2" y2="6" stroke="currentColor" stroke-width="1.2"/></svg><span data-i18n="edge_hint">Кликните на второй узел</span></div>
+      <div id="canvasContent" style="position: absolute; transform-origin: 0 0; width: 0; height: 0; overflow: visible; z-index: 1;">
+        <svg id="svgLayer" style="position: absolute; overflow: visible;"><g id="edgesGroup"></g><line id="drawLine" stroke="rgba(190,255,0,0.65)" stroke-width="1.5" stroke-dasharray="5 3" style="display:none"/></svg>
+        <div id="nodesLayer" style="position: absolute;"></div>
+      </div>
+      <div class="canvas-empty" id="canvasEmpty">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" opacity=".18"><circle cx="26" cy="26" r="11" stroke="#BEFF00" stroke-width="1.5"/><line x1="12" y1="14" x2="19" y2="19" stroke="#BEFF00" stroke-width="1.5"/><line x1="40" y1="14" x2="33" y2="19" stroke="#BEFF00" stroke-width="1.5"/><line x1="12" y1="40" x2="19" y2="33" stroke="#BEFF00" stroke-width="1.5"/><line x1="40" y1="40" x2="33" y2="33" stroke="#BEFF00" stroke-width="1.5"/></svg>
+        <div class="empty-title" data-i18n="empty_title">Граф пуст</div>
+        <div class="empty-sub" data-i18n="empty_sub">Перетащи тип из панели или нажми <kbd>A</kbd></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="rpanel hidden" id="rPanel">
+    <div class="rp-header"><span class="rp-title" id="rpTitle"></span><button class="icon-btn" onclick="closePanel()"><svg width="11" height="11" viewBox="0 0 11 11"><line x1="1" y1="1" x2="10" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="1" x2="1" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+    <div class="rp-body" id="rpBody"></div>
+    <div class="rp-footer" id="rpFooter"></div>
+  </aside>
+</div>
+
+<div class="statusbar">
+  <div class="sb-dot"></div>
+  <span class="sbi"><span data-i18n="st_nodes">Узлов:</span> <b id="sNodes">0</b></span><span class="sbi-sep">·</span>
+  <span class="sbi"><span data-i18n="st_edges">Связей:</span> <b id="sEdges">0</b></span><span class="sbi-sep">·</span>
+  <span class="sbi" id="sSelection" style="color:var(--text3)">Нет выбора</span>
+  <div style="flex:1"></div>
+  
+  <select id="langSelect" class="lang-switcher" onchange="window.changeLang(this.value)">
+    <option value="ru">RU</option>
+    <option value="uk">УКР</option>
+    <option value="en">EN</option>
+  </select>
+
+  <span class="sbi mono" style="margin-left: 8px;">Krapka Graph v1.0</span>
+</div>
+
+<div class="modal-ov" id="addModal" onclick="modalBg(event,'addModal')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-ttl"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="#BEFF00" stroke-width="1.3"/><line x1="6.5" y1="4" x2="6.5" y2="9" stroke="#BEFF00" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="6.5" x2="9" y2="6.5" stroke="#BEFF00" stroke-width="1.3" stroke-linecap="round"/></svg><span data-i18n="m_new_node">Новый узел</span></div>
+      <button class="icon-btn" onclick="hideModal('addModal')"><svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl" data-i18n="m_name">Название</label><input class="fi" id="modalName" data-i18n-placeholder="m_name_ph" placeholder="Например: John Doe" onkeydown="if(event.key==='Enter')addNodeFromModal()"></div>
+      <div class="fg"><label class="fl" data-i18n="m_type">Тип</label><div class="modal-type-grid" id="modalTypeGrid"></div></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn-ghost" onclick="hideModal('addModal')" data-i18n="m_cancel">Отмена</button>
+      <button class="btn-lime" onclick="addNodeFromModal()" data-i18n="m_add">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="edgeModal" onclick="modalBg(event,'edgeModal')">
+  <div class="modal" style="width:300px">
+    <div class="modal-hdr">
+      <div class="modal-ttl"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="2.5" cy="6.5" r="1.8" stroke="#BEFF00" stroke-width="1.2"/><circle cx="10.5" cy="6.5" r="1.8" stroke="#BEFF00" stroke-width="1.2"/><line x1="4.3" y1="6.5" x2="8.7" y2="6.5" stroke="#BEFF00" stroke-width="1.2"/></svg><span data-i18n="m_edge">Связь</span></div>
+      <button class="icon-btn" onclick="hideModal('edgeModal')"><svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl" data-i18n="m_edge_lbl">Подпись связи</label><input class="fi" id="edgeLabel" data-i18n-placeholder="m_edge_ph" placeholder="Например: Работает в" onkeydown="if(event.key==='Enter')applyEdgeEdit()"></div>
+      <div class="edge-info" id="edgeInfo"></div>
+      <div class="fg" id="edgeStraightRow" style="display:none;margin-top:8px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2)"><input type="checkbox" id="edgeStraightChk" style="accent-color:var(--lime);cursor:pointer"><span data-i18n="m_edge_str">Прямая линия</span></label></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn-ghost-danger" id="edgeDeleteBtn" onclick="deleteEdge()" data-i18n="c_del">Удалить</button>
+      <button class="btn-ghost" onclick="hideModal('edgeModal')" data-i18n="m_cancel">Отмена</button>
+      <button class="btn-lime" onclick="applyEdgeEdit()" data-i18n="m_save">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="groupModal" onclick="modalBg(event,'groupModal')">
+  <div class="modal" style="width:280px">
+    <div class="modal-hdr"><div class="modal-ttl" data-i18n="m_group">Группировка</div><button class="icon-btn" onclick="hideModal('groupModal')"><svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+    <div class="modal-body"><div class="fg"><label class="fl" data-i18n="m_group_name">Название группы</label><input class="fi" id="groupName" data-i18n-placeholder="m_group_ph" placeholder="Например: Сеть А" onkeydown="if(event.key==='Enter')applyGroup()"></div></div>
+    <div class="modal-ftr"><button class="btn-ghost" onclick="hideModal('groupModal')" data-i18n="m_cancel">Отмена</button><button class="btn-lime" onclick="applyGroup()" data-i18n="m_create">Создать</button></div>
+  </div>
+</div>
+
+<div class="ctx" id="ctxMenu">
+  <div class="ctx-item" onclick="ctxAction('edit')"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 1.5l3 3-6 6H1.5V7.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg><span data-i18n="c_prop">Свойства</span></div>
+  <div class="ctx-item" onclick="ctxAction('duplicate')"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 8V2.5A1.5 1.5 0 012.5 1H8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span data-i18n="c_dup">Дублировать  Ctrl+D</span></div>
+  <div class="ctx-item" onclick="ctxAction('connect')"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="2" cy="6" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="10" cy="6" r="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="3.5" y1="6" x2="8.5" y2="6" stroke="currentColor" stroke-width="1.2"/><path d="M7.2 4.8l1.8 1.2-1.8 1.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span data-i18n="c_link">Связать</span></div>
+  <div class="ctx-item" id="ctxGroup" onclick="ctxAction('group')"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5h10" stroke="currentColor" stroke-width="1.2"/><path d="M3 3V2M9 3V2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span data-i18n="c_group">Сгруппировать</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="ctxAction('delete')"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M4.5 3V2h3v1M4 3l.5 7h3l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="c_del">Удалить</span></div>
+</div>
+
+<div class="modal-ov" id="renameModal" onclick="modalBg(event,'renameModal')">
+  <div class="modal" style="width:300px">
+    <div class="modal-hdr"><div class="modal-ttl" data-i18n="ren_proj">Переименовать проект</div><button class="icon-btn" onclick="hideModal('renameModal')"><svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+    <div class="modal-body"><div class="fg"><label class="fl" data-i18n="ren_name">Название проекта</label><input class="fi" id="renameInput" data-i18n-placeholder="ren_name_ph" placeholder="Название" onkeydown="if(event.key==='Enter')applyRename()"></div></div>
+    <div class="modal-ftr"><button class="btn-ghost" onclick="hideModal('renameModal')" data-i18n="m_cancel">Отмена</button><button class="btn-lime" onclick="applyRename()" data-i18n="m_ok">ОК</button></div>
+  </div>
+</div>
+
+<div class="autosave-toast" id="autosaveToast">Autosaved</div>
+<script src="app.js"></script>
+</body>
+</html>
