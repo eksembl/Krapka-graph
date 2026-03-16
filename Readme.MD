@@ -2,7 +2,7 @@
 
 A desktop graph visualization tool for OSINT investigations, built with Electron. Create nodes, connect them with edges, and visually map relationships between people, organizations, infrastructure, and social accounts.
 
-https://raw.githubusercontent.com/eksembl/Krapka-graph-OSINT/refs/heads/main/image.png
+![Krapka Graph](https://raw.githubusercontent.com/eksempl/Krapka-graph-OSINT/refs/heads/main/image.png)
 
 ---
 
