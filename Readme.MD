@@ -55,7 +55,7 @@ A desktop graph visualization tool for OSINT investigations, built with Electron
 - Search across all node fields
 - Straight and curved edge styles
 - Warning when deleting a node with 5+ connections
-- Interface languages: Russian, Ukrainian, English
+- Interface languages: Ukrainian, russian, English
 
 ---
 
