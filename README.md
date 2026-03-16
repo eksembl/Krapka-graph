@@ -148,11 +148,11 @@ krapka-graph/
 ├── src/
 │   ├── main/
 │   │   ├── main.js        — Electron main process, IPC handlers, file dialogs
-│   │   └── preload.js     — Context bridge (renderer ↔ main)
+│   │   └── preload.js     — Context bridge 
 │   ├── renderer/
 │   │   ├── index.html     — App shell
-│   │   ├── app.js         — All renderer logic (~3400 lines)
-│   │   └── styles.css     — UI styles (~1550 lines)
+│   │   ├── app.js         — All renderer logic 
+│   │   └── styles.css     — UI styles
 │   └── assets/
 │       └── icon.png
 ├── package.json
