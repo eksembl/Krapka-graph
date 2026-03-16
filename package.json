@@ -18,6 +18,7 @@
   "build": {
     "appId": "com.krapka.graph",
     "productName": "Krapka Graph",
+    "publish": null,
     "directories": {
       "output": "dist"
     },
