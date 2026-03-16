@@ -1,13 +1,15 @@
 {
   "name": "krapka-graph",
-  "version": "0.1.1",
+  "version": "1.2.0",
   "description": "Graph visualization tool for OSINT investigations",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
     "build": "electron-builder --win --x64",
-    "build:all": "electron-builder --win --mac --linux"
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --linux"
   },
   "build": {
     "appId": "com.krapka.graph",
@@ -51,14 +53,14 @@
       "deleteAppDataOnUninstall": false,
       "useZip": false
     },
-    "mac": {
-      "target": "dmg",
-      "icon": "src/assets/icon.png",
-      "category": "public.app-category.productivity"
-    },
     "linux": {
-      "target": "AppImage",
-      "icon": "src/assets/icon.png"
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "src/assets/icon.png",
+      "category": "Network"
     }
   },
   "devDependencies": {

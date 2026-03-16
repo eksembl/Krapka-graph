@@ -50,13 +50,73 @@ ipcMain.on("win:maximize", () =>
 );
 ipcMain.on("win:close", () => {
   if (mainWindow && mainWindow.webContents) {
+    // Сначала сохраняем в localStorage, потом проверяем есть ли несохранённые изменения
     mainWindow.webContents
-      .executeJavaScript("if(window._PM) _PM.persistNow(); true")
-      .catch(() => {});
+      .executeJavaScript(
+        "if(window._PM) _PM.persistNow(); window.dirty || false",
+      )
+      .then((isDirty) => {
+        if (isDirty) {
+          const { dialog: d } = require("electron");
+          const choice = d.showMessageBoxSync(mainWindow, {
+            type: "question",
+            buttons: ["Закрыть без сохранения", "Отмена"],
+            defaultId: 1,
+            cancelId: 1,
+            title: "Несохранённые изменения",
+            message: "Есть несохранённые изменения. Закрыть без сохранения?",
+          });
+          if (choice === 1) return; // Отмена — не закрываем
+        }
+        // Делаем резервную копию localStorage в файловую систему перед закрытием
+        mainWindow.webContents
+          .executeJavaScript(
+            "JSON.stringify(Object.fromEntries(Object.entries(localStorage).filter(([k]) => k.startsWith('krapka'))))",
+          )
+          .then((backup) => {
+            try {
+              const backupDir = path.join(app.getPath("userData"), "backups");
+              if (!fs.existsSync(backupDir))
+                fs.mkdirSync(backupDir, { recursive: true });
+              const backupFile = path.join(backupDir, "krapka_backup.json");
+              fs.writeFileSync(backupFile, backup, "utf-8");
+            } catch (e) {
+              console.warn("Backup failed:", e);
+            }
+            setTimeout(() => {
+              if (mainWindow) mainWindow.destroy();
+            }, 50);
+          })
+          .catch(() => {
+            if (mainWindow) mainWindow.destroy();
+          });
+      })
+      .catch(() => {
+        if (mainWindow) mainWindow.destroy();
+      });
+  } else {
+    if (mainWindow) mainWindow.destroy();
   }
-  setTimeout(() => {
-    if (mainWindow) mainWindow.close();
-  }, 80);
+});
+
+ipcMain.handle("backup:restore", async () => {
+  try {
+    const backupFile = path.join(
+      app.getPath("userData"),
+      "backups",
+      "krapka_backup.json",
+    );
+    if (!fs.existsSync(backupFile)) return { success: false };
+    const raw = fs.readFileSync(backupFile, "utf-8");
+    return { success: true, data: JSON.parse(raw) };
+  } catch (e) {
+    return { success: false };
+  }
+});
+
+ipcMain.handle("backup:check-empty", async (_, lsKeys) => {
+  // Рендерер сообщает нам список ключей localStorage — если пусто, восстанавливаем
+  return { isEmpty: !lsKeys || lsKeys.length === 0 };
 });
 
 ipcMain.handle("file:save", async (_, data) => {
