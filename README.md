@@ -2,7 +2,7 @@
 
 A desktop graph editor for link analysis, OSINT, and network visualization. Built with Electron.
 
-![Version]([https://img.shields.io/badge/version-1.2.0-lime](https://github.com/eksembl/Krapka-graph/blob/main/1.2.png))
+![Krapka Graph](https://github.com/eksembl/Krapka-graph/blob/main/1.2.png)]
 
 ---
 
