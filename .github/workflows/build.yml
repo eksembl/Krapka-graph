@@ -5,9 +5,13 @@ on:
     tags:
       - "v*"
 
-# Разрешаем скрипту создавать релизы и прикреплять к ним файлы
+# Разрешаем скрипту создавать релизы и прикреплять файлы
 permissions:
   contents: write
+
+# Отключаем предупреждения GitHub про устаревший Node.js 20
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-windows:
@@ -19,20 +23,10 @@ jobs:
           node-version: 18
       - name: Install dependencies
         run: npm install
-      - name: Build Windows
+      - name: Build and Publish Windows
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-installer
-          path: dist/*Setup*.exe
-      - name: Upload portable
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-portable
-          path: dist/*portable*.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -43,25 +37,10 @@ jobs:
           node-version: 18
       - name: Install dependencies
         run: npm install
-      - name: Build Linux
+      - name: Build and Publish Linux
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:linux
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-AppImage
-          path: dist/*.AppImage
-      - name: Upload deb
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-deb
-          path: dist/*.deb
-      - name: Upload rpm
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-rpm
-          path: dist/*.rpm
 
   build-mac:
     runs-on: macos-latest
@@ -72,12 +51,7 @@ jobs:
           node-version: 18
       - name: Install dependencies
         run: npm install
-      - name: Build macOS
+      - name: Build and Publish macOS
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:mac
-      - name: Upload dmg
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-dmg
-          path: dist/*.dmg
