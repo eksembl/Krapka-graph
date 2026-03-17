@@ -2,14 +2,24 @@ const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
+// Auto-update — works when packaged with electron-builder.
+// In dev mode (--dev flag) update check is skipped silently.
+let autoUpdater = null;
+try {
+  const { autoUpdater: au } = require("electron-updater");
+  autoUpdater = au;
+} catch (e) {
+  // electron-updater not installed — skip updates
+}
+
 let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 1440,
-    minHeight: 900,
+    minWidth: 1024,
+    minHeight: 680,
     frame: false,
     backgroundColor: "#0A0A0A",
     webPreferences: {
@@ -24,7 +34,6 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
 
-  // ИСПРАВЛЕНИЕ: принудительно даем фокус окну при загрузке
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
     mainWindow.focus();
@@ -38,6 +47,28 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   Menu.setApplicationMenu(null);
+
+  // Auto-update setup
+  if (autoUpdater && !process.argv.includes("--dev")) {
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on("update-available", () => {
+      if (mainWindow) mainWindow.webContents.send("update:status", "available");
+    });
+    autoUpdater.on("update-downloaded", () => {
+      if (mainWindow)
+        mainWindow.webContents.send("update:status", "downloaded");
+    });
+    autoUpdater.on("error", (err) => {
+      console.warn("Auto-update error:", err.message);
+    });
+
+    // Check for updates 3 seconds after launch so UI is ready
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(() => {});
+    }, 3000);
+  }
 });
 
 app.on("window-all-closed", () => {
@@ -48,9 +79,11 @@ ipcMain.on("win:minimize", () => mainWindow.minimize());
 ipcMain.on("win:maximize", () =>
   mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize(),
 );
+ipcMain.on("win:refocus", () => {
+  if (mainWindow) mainWindow.focus();
+});
 ipcMain.on("win:close", () => {
   if (mainWindow && mainWindow.webContents) {
-    // Сначала сохраняем в localStorage, потом проверяем есть ли несохранённые изменения
     mainWindow.webContents
       .executeJavaScript(
         "if(window._PM) _PM.persistNow(); window.dirty || false",
@@ -66,9 +99,9 @@ ipcMain.on("win:close", () => {
             title: "Несохранённые изменения",
             message: "Есть несохранённые изменения. Закрыть без сохранения?",
           });
-          if (choice === 1) return; // Отмена — не закрываем
+          if (choice === 1) return;
         }
-        // Делаем резервную копию localStorage в файловую систему перед закрытием
+
         mainWindow.webContents
           .executeJavaScript(
             "JSON.stringify(Object.fromEntries(Object.entries(localStorage).filter(([k]) => k.startsWith('krapka'))))",
@@ -115,7 +148,6 @@ ipcMain.handle("backup:restore", async () => {
 });
 
 ipcMain.handle("backup:check-empty", async (_, lsKeys) => {
-  // Рендерер сообщает нам список ключей localStorage — если пусто, восстанавливаем
   return { isEmpty: !lsKeys || lsKeys.length === 0 };
 });
 
@@ -126,7 +158,6 @@ ipcMain.handle("file:save", async (_, data) => {
     filters: [{ name: "Krapka Graph", extensions: ["kg"] }],
   });
 
-  // ИСПРАВЛЕНИЕ: возвращаем фокус окну после закрытия системного диалога
   if (mainWindow) mainWindow.focus();
 
   if (canceled || !filePath) return { success: false };
@@ -141,7 +172,6 @@ ipcMain.handle("file:open", async () => {
     properties: ["openFile"],
   });
 
-  // ИСПРАВЛЕНИЕ: возвращаем фокус окну после закрытия системного диалога
   if (mainWindow) mainWindow.focus();
 
   if (canceled || !filePaths.length) return { success: false };
@@ -151,13 +181,47 @@ ipcMain.handle("file:open", async () => {
 
 ipcMain.handle("file:fetch-image", async (_, url) => {
   try {
+    // Security: only allow https:// URLs, block internal/private addresses
+    if (typeof url !== "string") return null;
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return null;
+    const hostname = parsed.hostname.toLowerCase();
+    const blocked = [
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0",
+      "::1",
+      "169.254.",
+      "10.",
+      "192.168.",
+      "172.16.",
+      "172.17.",
+      "172.18.",
+      "172.19.",
+      "172.20.",
+      "172.21.",
+      "172.22.",
+      "172.23.",
+      "172.24.",
+      "172.25.",
+      "172.26.",
+      "172.27.",
+      "172.28.",
+      "172.29.",
+      "172.30.",
+      "172.31.",
+    ];
+    if (blocked.some((b) => hostname === b || hostname.startsWith(b)))
+      return null;
     const response = await fetch(url);
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.startsWith("image/")) return null;
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const mimeType = response.headers.get("content-type") || "image/png";
+    const mimeType = contentType.split(";")[0].trim();
     return `data:${mimeType};base64,${buffer.toString("base64")}`;
   } catch (error) {
-    console.error("- - - - -:", error);
+    console.error("fetchImage error:", error);
     return null;
   }
 });
@@ -173,6 +237,10 @@ ipcMain.handle("export:png", async (_, dataUrl) => {
   const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
   fs.writeFileSync(filePath, Buffer.from(base64, "base64"));
   return { success: true, filePath };
+});
+
+ipcMain.on("update:download", () => {
+  if (autoUpdater) autoUpdater.downloadUpdate().catch(() => {});
 });
 
 ipcMain.handle("export:svg", async (_, svgString) => {

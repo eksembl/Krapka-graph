@@ -10,4 +10,8 @@ contextBridge.exposeInMainWorld("krapka", {
   exportSvg: (svgString) => ipcRenderer.invoke("export:svg", svgString),
   fetchImage: (url) => ipcRenderer.invoke("file:fetch-image", url),
   restoreBackup: () => ipcRenderer.invoke("backup:restore"),
+  refocus: () => ipcRenderer.send("win:refocus"),
+  onUpdateStatus: (cb) =>
+    ipcRenderer.on("update:status", (_, status) => cb(status)),
+  downloadUpdate: () => ipcRenderer.send("update:download"),
 });
